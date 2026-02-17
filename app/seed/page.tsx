@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+
+import { doc, setDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { UserRole } from '@/lib/types';
 import toast from 'react-hot-toast';
 
@@ -19,14 +19,15 @@ export default function SeedPage() {
         setLoading(true);
 
         try {
-            // 1. Create Auth User
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+            // 1. Generate ID for new user
+            const newUserRef = doc(collection(db, 'users'));
+            const newUserId = newUserRef.id;
 
-            // 2. Create Firestore Profile
-            await setDoc(doc(db, 'users', user.uid), {
-                uid: user.uid,
-                email: user.email,
+            // 2. Create Firestore Profile (Custom Auth: Storing password directly as requested)
+            await setDoc(newUserRef, {
+                uid: newUserId,
+                email: email,
+                password: password, // Storing password for custom auth
                 name: name,
                 role: role,
                 createdAt: serverTimestamp(),
