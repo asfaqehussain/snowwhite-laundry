@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,7 +13,22 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
+// const auth = getAuth(app); // Disabled for custom auth
 
-export { app, auth, db };
+// Initialize Firestore with settings to avoid "offline" issues
+let db: Firestore;
+try {
+    db = initializeFirestore(app, {
+        experimentalForceLongPolling: true,
+    });
+} catch (error) {
+    // If already initialized, use existing instance
+    db = getFirestore(app);
+}
+
+// Debug logging
+if (typeof window !== "undefined") {
+    console.log("Firebase initialized. Project:", firebaseConfig.projectId);
+}
+
+export { app, /* auth, */ db };

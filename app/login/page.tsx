@@ -1,17 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { UserProfile } from '@/lib/types';
 import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAuth } from '@/lib/auth-context';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const { login } = useAuth(); // Use the new login method from context
     const router = useRouter();
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -19,25 +22,30 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+            // Updated to query Firestore directly instead of Firebase Auth
+            const q = query(
+                collection(db, 'users'),
+                where('email', '==', email),
+                where('password', '==', password)
+            );
 
-            // Fetch user role
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            const querySnapshot = await getDocs(q);
 
-            if (userDoc.exists()) {
+            if (!querySnapshot.empty) {
+                const userDoc = querySnapshot.docs[0];
                 const userData = userDoc.data() as UserProfile;
-                const role = userData.role;
+
+                await login(userDoc.id); // Call custom login to set session
 
                 toast.success(`Welcome back, ${userData.name}!`);
 
+                const role = userData.role;
                 if (role === 'admin') router.push('/admin');
                 else if (role === 'driver') router.push('/driver');
                 else if (role === 'hotel_manager') router.push('/hotel');
                 else router.push('/unauthorized');
             } else {
-                toast.error('User profile not found. Contact admin.');
-                await auth.signOut();
+                toast.error('Invalid email or password');
             }
         } catch (error: any) {
             console.error(error);
@@ -48,67 +56,76 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-brand-50 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg border border-gray-100">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+            {/* Background Decorations */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                <div className="absolute top-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-brand-200/20 rounded-full blur-3xl" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[40rem] h-[40rem] bg-indigo-200/20 rounded-full blur-3xl" />
+            </div>
+
+            <div className="max-w-[400px] w-full space-y-8 bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/20 relative z-10 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
                 <div className="text-center">
-                    {/* Logo placeholder - replace with Image component when asset is available */}
-                    <div className="mx-auto h-20 w-20 bg-brand-100 rounded-full flex items-center justify-center text-3xl">
-                        🧺
+                    {/* Logo */}
+                    <div className="mx-auto h-24 w-24 relative mb-6 transition-transform hover:scale-105 duration-300">
+                        <img
+                            src="/logo.png"
+                            alt="Snow White Washing Company"
+                            className="object-contain w-full h-full drop-shadow-sm"
+                        />
                     </div>
-                    <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                        Snow White Washing
+                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight font-heading">
+                        Welcome Back
                     </h2>
-                    <p className="mt-2 text-sm text-gray-600">
-                        Sign in to your account
+                    <p className="mt-2 text-sm text-slate-500">
+                        Sign in to access your dashboard
                     </p>
                 </div>
-                <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+
+                <form className="mt-8 space-y-5" onSubmit={handleLogin}>
                     <input type="hidden" name="remember" value="true" />
-                    <div className="rounded-md shadow-sm -space-y-px">
-                        <div>
-                            <label htmlFor="email-address" className="sr-only">
-                                Email address
-                            </label>
-                            <input
-                                id="email-address"
-                                name="email"
-                                type="email"
-                                autoComplete="email"
-                                required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-brand-500 focus:border-brand-500 focus:z-10 sm:text-sm"
-                                placeholder="Email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="password" className="sr-only">
-                                Password
-                            </label>
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                autoComplete="current-password"
-                                required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-brand-500 focus:border-brand-500 focus:z-10 sm:text-sm"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
+
+                    <div className="space-y-4">
+                        <Input
+                            id="email-address"
+                            name="email"
+                            type="email"
+                            autoComplete="email"
+                            required
+                            label="Email Address"
+                            placeholder="name@company.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                        <Input
+                            id="password"
+                            name="password"
+                            type="password"
+                            autoComplete="current-password"
+                            required
+                            label="Password"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
                     </div>
 
-                    <div>
-                        <button
+                    <div className="pt-2">
+                        <Button
                             type="submit"
-                            disabled={loading}
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50"
+                            isLoading={loading}
+                            className="w-full text-base py-3 font-semibold shadow-brand-500/20"
+                            size="lg"
                         >
                             {loading ? 'Signing in...' : 'Sign in'}
-                        </button>
+                        </Button>
                     </div>
                 </form>
+
+                <div className="text-center pt-2">
+                    <p className="text-xs text-slate-400">
+                        Snow White Washing Company &copy; {new Date().getFullYear()}
+                    </p>
+                </div>
             </div>
         </div>
     );

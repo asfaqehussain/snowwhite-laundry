@@ -7,7 +7,8 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusIcon, TrashIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { Card } from '@/components/ui/card';
+import { Plus, Trash2, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Default items based on user provided list
@@ -91,73 +92,93 @@ export default function CollectionPage() {
     };
 
     return (
-        <div>
+        <div className="pb-safe">
             <div className="flex items-center mb-6">
-                <button onClick={() => router.back()} className="mr-4 text-gray-500 hover:text-gray-900">
-                    <ArrowLeftIcon className="h-6 w-6" />
+                <button onClick={() => router.back()} className="mr-4 text-slate-400 hover:text-slate-800 transition-colors">
+                    <ArrowLeft className="h-6 w-6" />
                 </button>
                 <div>
-                    <h1 className="text-xl font-bold text-gray-900">{hotelName}</h1>
-                    <p className="text-sm text-gray-500">New Collection</p>
+                    <h1 className="text-xl font-bold text-slate-900 font-heading">{hotelName}</h1>
+                    <p className="text-sm text-slate-500">New Collection</p>
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6 pb-20">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4">
-                    {items.map((item, index) => (
-                        <div key={index} className="flex items-end space-x-2 border-b border-gray-50 pb-4 last:border-0 last:pb-0">
-                            <div className="flex-1">
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Item Type</label>
-                                <select
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm py-2 px-3 border"
-                                    value={item.type}
-                                    onChange={(e) => updateItem(index, 'type', e.target.value)}
-                                >
-                                    {ITEM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
+            <form onSubmit={handleSubmit} className="space-y-6 pb-24">
+                <Card className="space-y-4" noPadding>
+                    <div className="p-4 bg-slate-50 border-b border-gray-100 flex items-center justify-between">
+                        <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wide">Items List</h3>
+                        <span className="text-xs font-medium text-slate-400">{items.length} items</span>
+                    </div>
+
+                    <div className="p-4 space-y-4">
+                        {items.map((item, index) => (
+                            <div key={index} className="flex items-end space-x-3 pb-4 border-b border-gray-50 last:border-0 last:pb-0">
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Type</label>
+                                    <div className="relative">
+                                        <select
+                                            className="block w-full rounded-xl border-gray-200 bg-gray-50/50 text-slate-900 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 sm:text-sm py-3 px-4 transition-all appearance-none"
+                                            value={item.type}
+                                            onChange={(e) => updateItem(index, 'type', e.target.value)}
+                                        >
+                                            {ITEM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="w-24">
+                                    <Input
+                                        label="Qty"
+                                        type="number"
+                                        min="0"
+                                        value={item.quantity}
+                                        onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
+                                        onFocus={e => e.target.select()}
+                                        className="text-center font-bold text-brand-600"
+                                    />
+                                </div>
+                                {items.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeItem(index)}
+                                        className="p-3 mb-[2px] text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                    >
+                                        <Trash2 className="h-5 w-5" />
+                                    </button>
+                                )}
                             </div>
-                            <div className="w-24">
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Qty</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm py-2 px-3 border"
-                                    value={item.quantity}
-                                    onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
-                                    onFocus={e => e.target.select()}
-                                />
-                            </div>
-                            {items.length > 1 && (
-                                <button type="button" onClick={() => removeItem(index)} className="p-2 text-gray-400 hover:text-red-500">
-                                    <TrashIcon className="h-5 w-5" />
-                                </button>
-                            )}
-                        </div>
-                    ))}
+                        ))}
+                    </div>
 
-                    <button
-                        type="button"
-                        onClick={addItem}
-                        className="w-full flex justify-center items-center py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-brand-500 hover:text-brand-500 transition-colors font-medium text-sm"
-                    >
-                        <PlusIcon className="h-5 w-5 mr-1" />
-                        Add Another Item
-                    </button>
-                </div>
+                    <div className="p-4 pt-0">
+                        <button
+                            type="button"
+                            onClick={addItem}
+                            className="w-full flex justify-center items-center py-4 border-2 border-dashed border-gray-200 rounded-xl text-slate-400 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50/50 transition-all font-semibold text-sm group"
+                        >
+                            <Plus className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
+                            Add Another Item
+                        </button>
+                    </div>
+                </Card>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
-                    <textarea
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm border p-3"
-                        rows={3}
-                        placeholder="Any specific comments..."
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                    />
-                </div>
+                <Card noPadding>
+                    <div className="p-4">
+                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Notes (Optional)</label>
+                        <textarea
+                            className="block w-full rounded-xl border-gray-200 bg-gray-50/50 text-slate-900 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 sm:text-sm p-4 transition-all"
+                            rows={3}
+                            placeholder="Any specific comments..."
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                        />
+                    </div>
+                </Card>
 
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 z-20 md:relative md:bg-transparent md:border-0 md:p-0">
-                    <Button type="submit" isLoading={submitting} className="w-full text-lg py-3 shadow-lg shadow-brand-500/20">
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 z-20 md:relative md:bg-transparent md:border-0 md:p-0">
+                    <Button type="submit" isLoading={submitting} className="w-full text-lg py-4 font-bold shadow-xl shadow-brand-500/20" size="lg">
                         Save Collection
                     </Button>
                 </div>

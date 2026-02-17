@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from './auth-context';
-import { UserRole } from './types';
+import { useAuth } from '../auth-context';
+import { UserRole } from '../types';
 
 export function useRoleProtection(allowedRoles: UserRole[]) {
     const { user, profile, loading } = useAuth();

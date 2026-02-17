@@ -5,6 +5,7 @@ export type UserRole = 'admin' | 'driver' | 'hotel_manager';
 export interface UserProfile {
     uid: string;
     email: string;
+    password?: string; // Storing strictly for the requested "custom auth" mechanism
     name: string;
     role: UserRole;
     assignedHotels?: string[]; // Hotel IDs (for Drivers/Managers)

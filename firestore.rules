@@ -1,63 +1,7 @@
-rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function getUserData() {
-      return get(
-        /databases/$(database)/documents/users/$(request.auth.uid)
-      ).data;
-    }
-    
-    function isAdmin() {
-      return isAuthenticated() && getUserData().role == 'admin';
-    }
-    
-    function isDriver() {
-      return isAuthenticated() && getUserData().role == 'driver';
-    }
-    
-    function isManager() {
-      return isAuthenticated() && getUserData().role == 'hotel_manager';
-    }
-
-    // Users Collection
-    match /users/{userId} {
-      // Users can read their own profile
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      // Only Admin can create/update/delete users
-      allow write: if isAdmin();
-    }
-
-    // Hotels Collection
-    match /hotels/{hotelId} {
-      // Admin: full access
-      allow write: if isAdmin();
-      // Everyone authenticated can read hotels (Drivers need to see list)
-      allow read: if isAuthenticated();
-    }
-
-    // Loads Collection
-    match /loads/{loadId} {
-      // Admin: full access
-      allow read, write: if isAdmin();
-      
-      // Driver: 
-      // - Create: if acting as self
-      // - Read: if own load
-      // - Update: if own load (e.g. status)
-      allow create: if isDriver() && request.resource.data.driverId == request.auth.uid;
-      allow read: if isDriver() && resource.data.driverId == request.auth.uid;
-      allow update: if isDriver() && resource.data.driverId == request.auth.uid;
-      
-      // Manager:
-      // - Read: if load belongs to their assigned hotel
-      allow read: if isManager() && resource.data.hotelId in getUserData().assignedHotels;
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
