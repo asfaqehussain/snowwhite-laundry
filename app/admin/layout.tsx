@@ -14,6 +14,7 @@ import {
     Menu,
     X
 } from "lucide-react";
+import NotificationBell from "@/components/ui/notification-bell";
 import { useState } from "react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -74,10 +75,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-xs ring-2 ring-white shadow-sm">
                             {profile?.name?.charAt(0) || 'A'}
                         </div>
-                        <div className="ml-3">
-                            <p className="text-sm font-medium text-slate-900">{profile?.name}</p>
+                        <div className="ml-3 flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 truncate">{profile?.name}</p>
                             <p className="text-xs text-slate-500 capitalize">{profile?.role}</p>
                         </div>
+                        <NotificationBell />
                     </div>
                     <button
                         onClick={signOut}
@@ -99,9 +101,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </div>
                         <span className="ml-2 font-bold text-slate-900">Snow White</span>
                     </div>
-                    <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-gray-500">
-                        {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <NotificationBell />
+                        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-gray-500">
+                            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Mobile Menu */}

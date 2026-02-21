@@ -10,6 +10,7 @@ import {
     History,
     LogOut
 } from "lucide-react";
+import NotificationBell from "@/components/ui/notification-bell";
 
 export default function DriverLayout({ children }: { children: React.ReactNode }) {
     const { isAuthorized, loading } = useRoleProtection(['driver']);
@@ -33,9 +34,12 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
                     </div>
                     <span className="ml-2 font-bold text-slate-900 tracking-tight">Snow White</span>
                 </div>
-                <button onClick={signOut} className="text-slate-400 hover:text-red-500 transition-colors">
-                    <LogOut className="h-5 w-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                    <NotificationBell />
+                    <button onClick={signOut} className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-xl hover:bg-red-50">
+                        <LogOut className="h-5 w-5" />
+                    </button>
+                </div>
             </header>
 
             <main className="flex-1 p-4 max-w-lg mx-auto w-full">

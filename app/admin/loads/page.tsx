@@ -12,6 +12,7 @@ import {
     Truck,
     Clock,
     CheckCircle2,
+    AlertTriangle,
     Building2,
     User,
     RefreshCw,
@@ -101,19 +102,25 @@ export default function AdminLoadsPage() {
     const StatusIcon = ({ status }: { status: string }) => {
         if (status === 'collected') return <Truck className="h-5 w-5" />;
         if (status === 'processing') return <Clock className="h-5 w-5" />;
+        if (status === 'approved') return <CheckCircle2 className="h-5 w-5" />;
+        if (status === 'partial') return <AlertTriangle className="h-5 w-5" />;
         return <CheckCircle2 className="h-5 w-5" />;
     };
 
     const statusBg: Record<string, string> = {
         collected: 'bg-amber-100 text-amber-600',
         processing: 'bg-blue-100 text-blue-600',
-        dropped: 'bg-emerald-100 text-emerald-600',
+        dropped: 'bg-purple-100 text-purple-600',
+        approved: 'bg-emerald-100 text-emerald-600',
+        partial: 'bg-red-100 text-red-600',
     };
 
-    const statusVariant: Record<string, 'warning' | 'info' | 'success'> = {
+    const statusVariant: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
         collected: 'warning',
         processing: 'info',
-        dropped: 'success',
+        dropped: 'default',
+        approved: 'success',
+        partial: 'error',
     };
 
     return (
@@ -136,12 +143,13 @@ export default function AdminLoadsPage() {
 
             {/* Summary Cards */}
             {!loading && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {[
                         { label: 'Active Loads', value: allCollections.filter(l => l.status === 'collected').length, color: 'bg-amber-50 text-amber-700 border-amber-100', icon: Truck },
                         { label: 'Processing', value: allCollections.filter(l => l.status === 'processing').length, color: 'bg-blue-50 text-blue-700 border-blue-100', icon: Clock },
-                        { label: 'Returned', value: allCollections.filter(l => l.status === 'dropped').length, color: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
-                        { label: 'Total Loads', value: allCollections.length, color: 'bg-slate-50 text-slate-700 border-slate-200', icon: Package },
+                        { label: 'Pending Approval', value: allCollections.filter(l => l.status === 'dropped').length, color: 'bg-purple-50 text-purple-700 border-purple-100', icon: Package },
+                        { label: 'Approved', value: allCollections.filter(l => l.status === 'approved').length, color: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
+                        { label: 'Partial', value: allCollections.filter(l => l.status === 'partial').length, color: 'bg-red-50 text-red-700 border-red-100', icon: AlertTriangle },
                     ].map(stat => (
                         <div key={stat.label} className={`rounded-2xl border p-4 ${stat.color}`}>
                             <stat.icon className="h-5 w-5 mb-2 opacity-70" />
@@ -234,10 +242,33 @@ export default function AdminLoadsPage() {
                                     </div>
 
                                     {load.droppedAt && (
-                                        <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-                                            <CheckCircle2 className="h-3 w-3" />
-                                            Returned: {format(load.droppedAt.toDate(), 'MMM d, yyyy • h:mm a')}
+                                        <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
+                                            <Package className="h-3 w-3" />
+                                            Dropped: {format(load.droppedAt.toDate(), 'MMM d, yyyy • h:mm a')}
                                         </p>
+                                    )}
+                                    {load.approvedAt && (
+                                        <p className="text-xs text-emerald-600 mt-0.5 flex items-center gap-1">
+                                            <CheckCircle2 className="h-3 w-3" />
+                                            Approved: {format(load.approvedAt.toDate(), 'MMM d, yyyy • h:mm a')}
+                                        </p>
+                                    )}
+                                    {load.status === 'partial' && load.remainingItems && load.remainingItems.length > 0 && (
+                                        <div className="mt-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                                            <p className="text-xs font-semibold text-red-600 flex items-center gap-1 mb-1">
+                                                <AlertTriangle className="h-3 w-3" /> Missing Items
+                                            </p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {load.remainingItems.map((item: any, i: number) => (
+                                                    <span key={i} className="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-medium">
+                                                        {item.type} ×{item.quantity}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            {load.approvalNotes && (
+                                                <p className="text-xs text-red-400 italic mt-1">"{load.approvalNotes}"</p>
+                                            )}
+                                        </div>
                                     )}
 
                                     {/* Items */}

@@ -2,12 +2,32 @@
 
 import { useRoleProtection } from "@/lib/hooks/useRoleProtection";
 import { useAuth } from "@/lib/auth-context";
-import { LogOut, Building2 } from "lucide-react";
+import { LogOut, Building2, ClipboardCheck } from "lucide-react";
 import Link from "next/link";
+import NotificationBell from "@/components/ui/notification-bell";
+import { useEffect, useState } from "react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function HotelLayout({ children }: { children: React.ReactNode }) {
     const { isAuthorized, loading } = useRoleProtection(['hotel_manager']);
     const { profile, signOut } = useAuth();
+    const [pendingCount, setPendingCount] = useState(0);
+
+    useEffect(() => {
+        if (!profile?.assignedHotels?.length) return;
+        const fetchPending = async () => {
+            try {
+                const snap = await getDocs(query(
+                    collection(db, 'loads'),
+                    where('hotelId', '==', profile.assignedHotels![0]),
+                    where('status', '==', 'dropped')
+                ));
+                setPendingCount(snap.size);
+            } catch { }
+        };
+        fetchPending();
+    }, [profile]);
 
     if (loading || !isAuthorized) return null;
 
@@ -23,16 +43,26 @@ export default function HotelLayout({ children }: { children: React.ReactNode })
                                 </div>
                                 <span className="ml-2 font-bold text-slate-900 tracking-tight">Snow White</span>
                             </div>
-                            <div className="ml-6 flex items-baseline space-x-4">
+                            <div className="ml-6 flex items-baseline space-x-3">
                                 <Link href="/hotel" className="bg-brand-50 text-brand-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center">
                                     <Building2 className="h-4 w-4 mr-2" />
                                     Dashboard
                                 </Link>
+                                <Link href="/hotel/approve" className="relative text-slate-600 hover:text-brand-700 hover:bg-brand-50 px-3 py-2 rounded-lg text-sm font-medium flex items-center transition-colors">
+                                    <ClipboardCheck className="h-4 w-4 mr-2" />
+                                    Approvals
+                                    {pendingCount > 0 && (
+                                        <span className="ml-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+                                            {pendingCount}
+                                        </span>
+                                    )}
+                                </Link>
                             </div>
                         </div>
 
-                        <div className="flex items-center">
-                            <div className="flex flex-col items-end mr-4 hidden sm:flex">
+                        <div className="flex items-center gap-2">
+                            <NotificationBell />
+                            <div className="flex flex-col items-end mr-2 hidden sm:flex">
                                 <span className="text-sm font-medium text-slate-900">{profile?.name}</span>
                                 <span className="text-xs text-slate-500">Hotel Manager</span>
                             </div>

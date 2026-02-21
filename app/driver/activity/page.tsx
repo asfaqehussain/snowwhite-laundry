@@ -78,7 +78,10 @@ export default function ActivityPage() {
     const getStatusColor = (status: string) => {
         if (status === 'collected') return 'bg-yellow-100 text-yellow-800';
         if (status === 'processing') return 'bg-blue-100 text-blue-800';
-        return 'bg-green-100 text-green-800';
+        if (status === 'dropped') return 'bg-purple-100 text-purple-800';
+        if (status === 'approved') return 'bg-green-100 text-green-800';
+        if (status === 'partial') return 'bg-red-100 text-red-800';
+        return 'bg-gray-100 text-gray-800';
     };
 
     return (
@@ -144,9 +147,29 @@ export default function ActivityPage() {
                             </div>
 
                             {load.droppedAt && (
-                                <p className="text-xs text-emerald-600 mb-2">
-                                    ✓ Returned: {format(load.droppedAt.toDate(), 'PPP')}
+                                <p className="text-xs text-purple-600 mb-2 flex items-center gap-1">
+                                    📦 Dropped: {format(load.droppedAt.toDate(), 'PPP')}
                                 </p>
+                            )}
+                            {load.approvedAt && (
+                                <p className="text-xs text-emerald-600 mb-2 flex items-center gap-1">
+                                    ✅ Approved: {format(load.approvedAt.toDate(), 'PPP')}
+                                </p>
+                            )}
+                            {load.status === 'partial' && (load as any).remainingItems?.length > 0 && (
+                                <div className="mb-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                                    <p className="text-xs font-semibold text-red-600 mb-1">⚠️ Missing Items (reported by hotel)</p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {(load as any).remainingItems.map((item: any, i: number) => (
+                                            <span key={i} className="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-medium">
+                                                {item.type} ×{item.quantity}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    {(load as any).approvalNotes && (
+                                        <p className="text-xs text-red-400 italic mt-1">"{(load as any).approvalNotes}"</p>
+                                    )}
+                                </div>
                             )}
 
                             <div className="border-t border-gray-50 pt-2 mt-2">

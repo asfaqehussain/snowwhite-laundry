@@ -10,9 +10,10 @@ import { ArrowLeftIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { createNotification, broadcastNotification } from '@/lib/notifications';
 
 export default function DropPage() {
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const router = useRouter();
     const [activeLoads, setActiveLoads] = useState<(Load & { hotelName?: string, selected?: boolean })[]>([]);
     const [loading, setLoading] = useState(true);
@@ -81,7 +82,36 @@ export default function DropPage() {
                 });
             });
             await batch.commit();
-            toast.success("Items marked as Dropped!");
+
+            // ── Notifications ────────────────────────────────────────────
+            const adminUids = (await getDocs(query(collection(db, 'users'), where('role', '==', 'admin')))).docs.map(d => d.id);
+
+            for (const load of selected) {
+                const totalPieces = load.items.reduce((s, i) => s + i.quantity, 0);
+                const summary = `${totalPieces} pieces from ${load.hotelName ?? 'hotel'}`;
+
+                // Notify hotel manager
+                const hotelSnap = await getDocs(query(collection(db, 'users'), where('assignedHotels', 'array-contains', load.hotelId), where('role', '==', 'hotel_manager')));
+                const managerUids = hotelSnap.docs.map(d => d.id);
+                await broadcastNotification({
+                    type: 'load_dropped',
+                    title: '📦 Load Dropped for Approval',
+                    body: `Driver ${profile?.name ?? 'Driver'} dropped ${summary}. Please review and approve.`,
+                    loadId: load.id,
+                    hotelId: load.hotelId,
+                }, managerUids);
+
+                // Notify admins
+                await broadcastNotification({
+                    type: 'load_dropped',
+                    title: '📦 Load Dropped at ' + (load.hotelName ?? 'hotel'),
+                    body: `${profile?.name ?? 'Driver'} dropped ${summary}. Awaiting hotel approval.`,
+                    loadId: load.id,
+                    hotelId: load.hotelId,
+                }, adminUids);
+            }
+
+            toast.success("Items marked as Dropped! Hotel manager notified.");
             router.push('/driver');
         } catch (error) {
             console.error(error);
