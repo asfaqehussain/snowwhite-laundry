@@ -9,6 +9,7 @@ import {
     LayoutDashboard,
     Building2,
     Users,
+    Package,
     LogOut,
     Menu,
     X
@@ -25,6 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
         { name: 'Hotels', href: '/admin/hotels', icon: Building2 },
         { name: 'Users / Drivers', href: '/admin/users', icon: Users },
+        { name: 'Loads', href: '/admin/loads', icon: Package },
     ];
 
     if (loading || !isAuthorized) return null;

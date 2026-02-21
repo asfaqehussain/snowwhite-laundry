@@ -9,10 +9,12 @@ import {
     Package,
     Wallet,
     ArrowUpRight,
-    TrendingUp
+    TrendingUp,
+    Layers
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import ActivityChart from '@/components/ui/activity-chart';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({
@@ -130,20 +132,25 @@ export default function AdminDashboard() {
                 ))}
             </div>
 
-            {/* Quick Actions & Recent Activity area could go here */}
+            {/* Activity Chart + Quick Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                    <Card className="h-full min-h-[300px] flex items-center justify-center border-dashed bg-slate-50/50">
-                        <div className="text-center text-slate-400">
-                            <p>Activity Chart Placeholder</p>
-                            <p className="text-xs">Coming in next update</p>
-                        </div>
-                    </Card>
+                    <ActivityChart />
                 </div>
                 <div>
                     <Card>
                         <h3 className="text-lg font-bold text-slate-900 mb-4 font-heading">Quick Actions</h3>
                         <div className="space-y-3">
+                            <Link href="/admin/loads" className="flex items-center p-3 hover:bg-slate-50 rounded-lg transition-colors group">
+                                <div className="h-8 w-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mr-3 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                    <Layers className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-slate-900">View Active Loads</p>
+                                    <p className="text-xs text-slate-500">Monitor in-progress</p>
+                                </div>
+                                <ArrowUpRight className="ml-auto h-4 w-4 text-slate-300 group-hover:text-amber-500" />
+                            </Link>
                             <Link href="/admin/users" className="flex items-center p-3 hover:bg-slate-50 rounded-lg transition-colors group">
                                 <div className="h-8 w-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center mr-3 group-hover:bg-brand-600 group-hover:text-white transition-colors">
                                     <Users className="h-4 w-4" />

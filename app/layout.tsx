@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { Toaster } from "react-hot-toast";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,8 +33,9 @@ export default function RootLayout({
         className={`${inter.variable} ${jakarta.variable} font-sans antialiased bg-slate-50 text-slate-900 selection:bg-brand-100 selection:text-brand-900`}
       >
         <AuthProvider>
+          <PageLoader />
           {children}
-          <Toaster position="top-center" />
+          <Toaster position="top-center" toastOptions={{ style: { borderRadius: '12px', fontFamily: 'var(--font-inter)', fontSize: '14px' } }} />
         </AuthProvider>
       </body>
     </html>

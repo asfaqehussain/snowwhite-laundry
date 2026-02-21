@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, orderBy, documentId } from 'firebase/firestore';
+import { collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 import { Load, Hotel } from '@/lib/types';
@@ -9,34 +9,51 @@ import { format } from 'date-fns';
 import clsx from 'clsx';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
+import { Package, AlertCircle } from 'lucide-react';
 
 export default function ActivityPage() {
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const router = useRouter();
     const [loads, setLoads] = useState<(Load & { hotelName?: string })[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (user) fetchLoads();
-    }, [user]);
+        // Use profile.uid OR user.uid — both should be the same
+        const uid = user?.uid || profile?.uid;
+        if (uid) fetchLoads(uid);
+        else if (!loading) setLoading(false);
+    }, [user, profile]);
 
-    const fetchLoads = async () => {
+    const fetchLoads = async (uid: string) => {
+        setError(null);
         try {
-            // 1. Get Loads
+            // Removed orderBy to avoid composite index requirement — sort client-side
             const q = query(
                 collection(db, 'loads'),
-                where('driverId', '==', user!.uid),
-                orderBy('collectedAt', 'desc')
+                where('driverId', '==', uid)
             );
             const snapshot = await getDocs(q);
             const loadsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Load));
 
-            // 2. Get Hotel Names (Optimization: could store hotelName in load to avoid this)
-            const hotelIds = [...new Set(loadsData.map(l => l.hotelId))];
+            if (loadsData.length === 0) {
+                setLoads([]);
+                setLoading(false);
+                return;
+            }
+
+            // Sort client-side by collectedAt desc, guard against null serverTimestamp
+            const sorted = loadsData.sort((a, b) => {
+                const aTime = a.collectedAt?.toMillis?.() ?? 0;
+                const bTime = b.collectedAt?.toMillis?.() ?? 0;
+                return bTime - aTime;
+            });
+
+            // Fetch Hotel Names
+            const hotelIds = [...new Set(sorted.map(l => l.hotelId))];
             const hotelMap: Record<string, string> = {};
 
             if (hotelIds.length > 0) {
-                // Batch fetch hotels (chunking needed if > 10, skipping for demo)
                 const hotelsQ = query(collection(db, 'hotels'), where(documentId(), 'in', hotelIds.slice(0, 10)));
                 const hotelsSnap = await getDocs(hotelsQ);
                 hotelsSnap.forEach(doc => {
@@ -44,17 +61,24 @@ export default function ActivityPage() {
                 });
             }
 
-            const enrichedLoads = loadsData.map(l => ({
+            const enrichedLoads = sorted.map(l => ({
                 ...l,
                 hotelName: hotelMap[l.hotelId] || 'Unknown Hotel'
             }));
 
             setLoads(enrichedLoads);
         } catch (error) {
-            console.error(error);
+            console.error('fetchLoads error:', error);
+            setError('Failed to load history. Please try again.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const getStatusColor = (status: string) => {
+        if (status === 'collected') return 'bg-yellow-100 text-yellow-800';
+        if (status === 'processing') return 'bg-blue-100 text-blue-800';
+        return 'bg-green-100 text-green-800';
     };
 
     return (
@@ -63,33 +87,67 @@ export default function ActivityPage() {
                 <button onClick={() => router.back()} className="mr-4 text-gray-500 hover:text-gray-900">
                     <ArrowLeftIcon className="h-6 w-6" />
                 </button>
-                <h1 className="text-xl font-bold text-gray-900">My Activity</h1>
+                <div>
+                    <h1 className="text-xl font-bold text-gray-900">My Activity</h1>
+                    {!loading && <p className="text-xs text-gray-400">{loads.length} load{loads.length !== 1 ? 's' : ''} found</p>}
+                </div>
             </div>
 
             {loading ? (
-                <div className="p-10 text-center">Loading...</div>
+                <div className="space-y-4">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="h-28 bg-slate-100 animate-pulse rounded-xl" />
+                    ))}
+                </div>
+            ) : error ? (
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                    <div className="h-14 w-14 bg-red-50 rounded-full flex items-center justify-center mb-3">
+                        <AlertCircle className="h-7 w-7 text-red-400" />
+                    </div>
+                    <p className="text-gray-700 font-medium">{error}</p>
+                    <button
+                        onClick={() => { setLoading(true); fetchLoads(user?.uid || profile?.uid || ''); }}
+                        className="mt-4 text-sm text-brand-600 font-semibold underline"
+                    >
+                        Retry
+                    </button>
+                </div>
             ) : loads.length === 0 ? (
-                <div className="text-center text-gray-500 mt-10">No collections found.</div>
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                    <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                        <Package className="h-8 w-8 text-slate-300" />
+                    </div>
+                    <h3 className="text-lg font-medium text-slate-900">No activity yet</h3>
+                    <p className="text-slate-500 text-sm mt-1 max-w-xs">
+                        Your collection history will appear here after you complete loads.
+                    </p>
+                </div>
             ) : (
                 <div className="space-y-4 pb-20">
                     {loads.map(load => (
-                        <div key={load.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                        <div key={load.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                             <div className="flex justify-between items-start mb-2">
                                 <div>
                                     <h3 className="font-semibold text-gray-900">{load.hotelName}</h3>
                                     <p className="text-xs text-gray-500">
-                                        {format(load.collectedAt.toDate(), 'PPP p')}
+                                        {load.collectedAt
+                                            ? format(load.collectedAt.toDate(), 'PPP p')
+                                            : 'Just collected...'}
                                     </p>
                                 </div>
                                 <span className={clsx(
                                     "px-2 py-1 text-xs rounded-full font-medium capitalize",
-                                    load.status === 'collected' ? "bg-yellow-100 text-yellow-800" :
-                                        load.status === 'processing' ? "bg-blue-100 text-blue-800" :
-                                            "bg-green-100 text-green-800"
+                                    getStatusColor(load.status)
                                 )}>
                                     {load.status}
                                 </span>
                             </div>
+
+                            {load.droppedAt && (
+                                <p className="text-xs text-emerald-600 mb-2">
+                                    ✓ Returned: {format(load.droppedAt.toDate(), 'PPP')}
+                                </p>
+                            )}
 
                             <div className="border-t border-gray-50 pt-2 mt-2">
                                 <p className="text-xs text-brand-600 font-medium mb-1">Items Collected:</p>
