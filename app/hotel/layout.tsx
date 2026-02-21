@@ -18,12 +18,21 @@ export default function HotelLayout({ children }: { children: React.ReactNode })
         if (!profile?.assignedHotels?.length) return;
         const fetchPending = async () => {
             try {
-                const snap = await getDocs(query(
-                    collection(db, 'loads'),
-                    where('hotelId', '==', profile.assignedHotels![0]),
-                    where('status', '==', 'dropped')
-                ));
-                setPendingCount(snap.size);
+                // Count dropped (needs approval) + unacknowledged pickups
+                const [droppedSnap, unackedSnap] = await Promise.all([
+                    getDocs(query(
+                        collection(db, 'loads'),
+                        where('hotelId', '==', profile.assignedHotels![0]),
+                        where('status', '==', 'dropped')
+                    )),
+                    getDocs(query(
+                        collection(db, 'loads'),
+                        where('hotelId', '==', profile.assignedHotels![0]),
+                        where('status', '==', 'collected'),
+                        where('pickupAcknowledged', '==', false)
+                    )),
+                ]);
+                setPendingCount(droppedSnap.size + unackedSnap.size);
             } catch { }
         };
         fetchPending();

@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User, Truck, Building2, Search } from 'lucide-react';
+import { User, Plus, Truck, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { UserRowSkeleton } from '@/components/ui/page-loader';
 
 export default function UsersPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
@@ -25,9 +26,7 @@ export default function UsersPage() {
     const [role, setRole] = useState<UserRole>('driver');
     const [selectedHotels, setSelectedHotels] = useState<string[]>([]);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+    useEffect(() => { fetchData(); }, []);
 
     const fetchData = async () => {
         try {
@@ -35,12 +34,11 @@ export default function UsersPage() {
                 getDocs(query(collection(db, 'users'), orderBy('name'))),
                 getDocs(query(collection(db, 'hotels'), orderBy('name')))
             ]);
-
             setUsers(usersSnap.docs.map(d => d.data() as UserProfile));
             setHotels(hotelsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Hotel)));
         } catch (error) {
             console.error(error);
-            toast.error("Failed to load data");
+            toast.error('Failed to load data');
         } finally {
             setLoading(false);
         }
@@ -49,53 +47,53 @@ export default function UsersPage() {
     const handleCreateUser = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
-
         try {
-            // Create a new document reference with an auto-generated ID
             const newUserRef = doc(collection(db, 'users'));
             const uid = newUserRef.id;
-
-            // Create Firestore Profile directly (Custom Auth)
             await setDoc(newUserRef, {
-                uid,
-                name,
-                email,
-                password, // Storing password in plain text as requested for "custom auth"
+                uid, name, email,
+                password, // custom auth — plain text as designed
                 role,
                 assignedHotels: selectedHotels,
                 createdAt: serverTimestamp()
             });
-
-            toast.success("User created successfully");
+            toast.success('User created successfully');
             setIsModalOpen(false);
             resetForm();
             fetchData();
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || "Failed to create user");
+            toast.error(error.message || 'Failed to create user');
         } finally {
             setSubmitting(false);
         }
     };
 
     const resetForm = () => {
-        setName('');
-        setEmail('');
-        setPassword('');
-        setRole('driver');
-        setSelectedHotels([]);
+        setName(''); setEmail(''); setPassword('');
+        setRole('driver'); setSelectedHotels([]);
     };
 
     const toggleHotel = (hotelId: string) => {
         if (role === 'hotel_manager') {
-            // Single select for managers
             setSelectedHotels([hotelId]);
         } else {
-            // Multi select for drivers
             setSelectedHotels(prev =>
                 prev.includes(hotelId) ? prev.filter(id => id !== hotelId) : [...prev, hotelId]
             );
         }
+    };
+
+    const roleIcon = (r: string) => {
+        if (r === 'driver') return <Truck className="h-6 w-6" />;
+        if (r === 'hotel_manager') return <Building2 className="h-6 w-6" />;
+        return <User className="h-6 w-6" />;
+    };
+
+    const roleBg = (r: string) => {
+        if (r === 'driver') return 'bg-brand-50 text-brand-600';
+        if (r === 'hotel_manager') return 'bg-amber-50 text-amber-600';
+        return 'bg-purple-50 text-purple-600';
     };
 
     return (
@@ -112,46 +110,45 @@ export default function UsersPage() {
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <ul className="divide-y divide-gray-50">
-                    {users.map((user) => (
-                        <li key={user.uid} className="px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-slate-50 transition-colors group">
-                            <div className="flex items-center">
-                                <div className={`h-12 w-12 flex-shrink-0 rounded-full flex items-center justify-center border border-gray-100 ${user.role === 'admin' ? 'bg-purple-50 text-purple-600' :
-                                    user.role === 'driver' ? 'bg-brand-50 text-brand-600' :
-                                        'bg-amber-50 text-amber-600'
-                                    }`}>
-                                    {user.role === 'admin' && <User className="h-6 w-6" />}
-                                    {user.role === 'driver' && <Truck className="h-6 w-6" />}
-                                    {user.role === 'hotel_manager' && <Building2 className="h-6 w-6" />}
+                {loading ? (
+                    <ul className="divide-y divide-slate-50">
+                        {[1, 2, 3, 4, 5].map(i => <UserRowSkeleton key={i} />)}
+                    </ul>
+                ) : (
+                    <ul className="divide-y divide-gray-50">
+                        {users.map((user) => (
+                            <li key={user.uid} className="px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-slate-50 transition-colors group">
+                                <div className="flex items-center">
+                                    <div className={`h-12 w-12 flex-shrink-0 rounded-full flex items-center justify-center border border-gray-100 ${roleBg(user.role)}`}>
+                                        {roleIcon(user.role)}
+                                    </div>
+                                    <div className="ml-4">
+                                        <div className="text-base font-bold text-slate-900">{user.name}</div>
+                                        <div className="text-sm text-slate-500">{user.email}</div>
+                                    </div>
                                 </div>
-                                <div className="ml-4">
-                                    <div className="text-base font-bold text-slate-900">{user.name}</div>
-                                    <div className="text-sm text-slate-500">{user.email}</div>
+                                <div className="mt-4 sm:mt-0 flex items-center space-x-6">
+                                    <Badge variant={
+                                        user.role === 'admin' ? 'default' :
+                                            user.role === 'driver' ? 'success' : 'warning'
+                                    } className="capitalize px-3 py-1">
+                                        {user.role.replace('_', ' ')}
+                                    </Badge>
+                                    <div className="text-sm text-slate-500 text-right min-w-[120px]">
+                                        {user.assignedHotels && user.assignedHotels.length > 0 ? (
+                                            <span className="font-medium">{user.assignedHotels.length} Hotels Assigned</span>
+                                        ) : (
+                                            <span className="text-slate-300">No Assignments</span>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="mt-4 sm:mt-0 flex items-center space-x-6">
-                                <Badge variant={
-                                    user.role === 'admin' ? 'default' :
-                                        user.role === 'driver' ? 'success' : 'warning'
-                                } className="capitalize px-3 py-1">
-                                    {user.role.replace('_', ' ')}
-                                </Badge>
-                                <div className="text-sm text-slate-500 text-right min-w-[120px]">
-                                    {user.assignedHotels && user.assignedHotels.length > 0 ? (
-                                        <span className="font-medium">{user.assignedHotels.length} Hotels Assigned</span>
-                                    ) : (
-                                        <span className="text-slate-300">No Assignments</span>
-                                    )}
-                                </div>
-                            </div>
-                        </li>
-                    ))}
-                    {users.length === 0 && (
-                        <li className="px-6 py-12 text-center text-slate-400">
-                            No users found.
-                        </li>
-                    )}
-                </ul>
+                            </li>
+                        ))}
+                        {users.length === 0 && (
+                            <li className="px-6 py-12 text-center text-slate-400">No users found.</li>
+                        )}
+                    </ul>
+                )}
             </div>
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New User">
@@ -165,10 +162,7 @@ export default function UsersPage() {
                         <select
                             className="block w-full rounded-xl border-gray-200 bg-gray-50/50 text-slate-900 focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 sm:text-sm py-3 px-4 transition-all"
                             value={role}
-                            onChange={e => {
-                                setRole(e.target.value as UserRole);
-                                setSelectedHotels([]);
-                            }}
+                            onChange={e => { setRole(e.target.value as UserRole); setSelectedHotels([]); }}
                         >
                             <option value="driver">Driver</option>
                             <option value="hotel_manager">Hotel Manager</option>
@@ -190,9 +184,7 @@ export default function UsersPage() {
                                             onChange={() => toggleHotel(hotel.id)}
                                             className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
                                         />
-                                        <span className="ml-3 block text-sm font-medium text-slate-700">
-                                            {hotel.name}
-                                        </span>
+                                        <span className="ml-3 block text-sm font-medium text-slate-700">{hotel.name}</span>
                                     </label>
                                 ))}
                                 {hotels.length === 0 && <p className="text-sm text-slate-400 px-2">No hotels created yet.</p>}

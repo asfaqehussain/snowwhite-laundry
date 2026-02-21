@@ -7,6 +7,7 @@ import { Load } from '@/lib/types';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { broadcastNotification } from '@/lib/notifications';
 import {
     Package,
     Truck,
@@ -17,8 +18,10 @@ import {
     User,
     RefreshCw,
     LayoutList,
-    Layers
+    Layers,
+    Timer
 } from 'lucide-react';
+import { ApprovalRowSkeleton, StatCardSkeleton } from '@/components/ui/page-loader';
 
 type ViewTab = 'active' | 'collections';
 
@@ -78,8 +81,36 @@ export default function AdminLoadsPage() {
                 driverName: driverMap[l.driverId] || 'Unknown Driver',
             }));
 
-            setActiveLoads(enriched.filter(l => l.status === 'collected' || l.status === 'processing'));
+            setActiveLoads(enriched.filter(l => ['collected', 'processing', 'partially_dropped'].includes(l.status)));
             setAllCollections(enriched);
+
+            // Fire overdue notifications (once per load, client-side trigger)
+            const now = new Date();
+            const overdueLoads = enriched.filter(l =>
+                l.dueDate &&
+                l.dueDate.toDate() < now &&
+                !['approved', 'partial'].includes(l.status)
+            );
+            if (overdueLoads.length > 0) {
+                const adminUids = (await getDocs(query(collection(db, 'users'), where('role', '==', 'admin')))).docs.map(d => d.id);
+                for (const load of overdueLoads) {
+                    // Check if notification already sent to avoid duplicates
+                    const existingSnap = await getDocs(query(
+                        collection(db, 'notifications'),
+                        where('loadId', '==', load.id),
+                        where('type', '==', 'load_delayed')
+                    ));
+                    if (existingSnap.empty) {
+                        await broadcastNotification({
+                            type: 'load_delayed',
+                            title: '⏰ Overdue Load',
+                            body: `Load at ${load.hotelName} by ${load.driverName} is past its due date.`,
+                            loadId: load.id,
+                            hotelId: load.hotelId,
+                        }, adminUids);
+                    }
+                }
+            }
         } catch (error) {
             console.error('AdminLoadsPage fetch error:', error);
         } finally {
@@ -99,9 +130,13 @@ export default function AdminLoadsPage() {
 
     const displayedLoads = tab === 'active' ? activeLoads : allCollections;
 
+    const isOverdue = (load: EnrichedLoad) =>
+        load.dueDate && load.dueDate.toDate() < new Date() && !['approved', 'partial'].includes(load.status);
+
     const StatusIcon = ({ status }: { status: string }) => {
         if (status === 'collected') return <Truck className="h-5 w-5" />;
         if (status === 'processing') return <Clock className="h-5 w-5" />;
+        if (status === 'partially_dropped') return <AlertTriangle className="h-5 w-5" />;
         if (status === 'approved') return <CheckCircle2 className="h-5 w-5" />;
         if (status === 'partial') return <AlertTriangle className="h-5 w-5" />;
         return <CheckCircle2 className="h-5 w-5" />;
@@ -110,6 +145,7 @@ export default function AdminLoadsPage() {
     const statusBg: Record<string, string> = {
         collected: 'bg-amber-100 text-amber-600',
         processing: 'bg-blue-100 text-blue-600',
+        partially_dropped: 'bg-orange-100 text-orange-600',
         dropped: 'bg-purple-100 text-purple-600',
         approved: 'bg-emerald-100 text-emerald-600',
         partial: 'bg-red-100 text-red-600',
@@ -118,6 +154,7 @@ export default function AdminLoadsPage() {
     const statusVariant: Record<string, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
         collected: 'warning',
         processing: 'info',
+        partially_dropped: 'error',
         dropped: 'default',
         approved: 'success',
         partial: 'error',
@@ -142,14 +179,19 @@ export default function AdminLoadsPage() {
             </div>
 
             {/* Summary Cards */}
-            {!loading && (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {loading ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {[1, 2, 3, 4, 5, 6].map(i => <StatCardSkeleton key={i} />)}
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     {[
-                        { label: 'Active Loads', value: allCollections.filter(l => l.status === 'collected').length, color: 'bg-amber-50 text-amber-700 border-amber-100', icon: Truck },
+                        { label: 'Active', value: allCollections.filter(l => l.status === 'collected').length, color: 'bg-amber-50 text-amber-700 border-amber-100', icon: Truck },
                         { label: 'Processing', value: allCollections.filter(l => l.status === 'processing').length, color: 'bg-blue-50 text-blue-700 border-blue-100', icon: Clock },
+                        { label: 'Partial Drop', value: allCollections.filter(l => l.status === 'partially_dropped').length, color: 'bg-orange-50 text-orange-700 border-orange-100', icon: AlertTriangle },
                         { label: 'Pending Approval', value: allCollections.filter(l => l.status === 'dropped').length, color: 'bg-purple-50 text-purple-700 border-purple-100', icon: Package },
                         { label: 'Approved', value: allCollections.filter(l => l.status === 'approved').length, color: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
-                        { label: 'Partial', value: allCollections.filter(l => l.status === 'partial').length, color: 'bg-red-50 text-red-700 border-red-100', icon: AlertTriangle },
+                        { label: 'Overdue', value: allCollections.filter(l => isOverdue(l)).length, color: 'bg-red-50 text-red-700 border-red-100', icon: Timer },
                     ].map(stat => (
                         <div key={stat.label} className={`rounded-2xl border p-4 ${stat.color}`}>
                             <stat.icon className="h-5 w-5 mb-2 opacity-70" />
@@ -191,9 +233,7 @@ export default function AdminLoadsPage() {
             {/* Content */}
             {loading ? (
                 <div className="space-y-4">
-                    {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="h-28 bg-slate-100 animate-pulse rounded-2xl" />
-                    ))}
+                    {[1, 2, 3, 4].map(i => <ApprovalRowSkeleton key={i} />)}
                 </div>
             ) : displayedLoads.length === 0 ? (
                 <Card className="flex flex-col items-center justify-center p-16 text-center border-dashed border-gray-200">
@@ -223,8 +263,13 @@ export default function AdminLoadsPage() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex flex-wrap items-center gap-2 mb-1">
                                         <Badge variant={statusVariant[load.status] || 'default'} className="capitalize">
-                                            {load.status}
+                                            {load.status.replace('_', ' ')}
                                         </Badge>
+                                        {isOverdue(load) && (
+                                            <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                                <Timer className="h-2.5 w-2.5" /> OVERDUE
+                                            </span>
+                                        )}
                                         <span className="text-xs text-slate-400">
                                             {load.collectedAt ? format(load.collectedAt.toDate(), 'MMM d, yyyy • h:mm a') : 'Just now'}
                                         </span>
@@ -241,6 +286,12 @@ export default function AdminLoadsPage() {
                                         </span>
                                     </div>
 
+                                    {load.dueDate && (
+                                        <p className={`text-xs mt-1 flex items-center gap-1 ${isOverdue(load) ? 'text-red-600 font-semibold' : 'text-slate-400'}`}>
+                                            <Timer className="h-3 w-3" />
+                                            Due: {format(load.dueDate.toDate(), 'MMM d, yyyy')}
+                                        </p>
+                                    )}
                                     {load.droppedAt && (
                                         <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
                                             <Package className="h-3 w-3" />

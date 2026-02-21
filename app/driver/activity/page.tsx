@@ -10,6 +10,7 @@ import clsx from 'clsx';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { Package, AlertCircle } from 'lucide-react';
+import { CardSkeleton } from '@/components/ui/page-loader';
 
 export default function ActivityPage() {
     const { user, profile } = useAuth();
@@ -98,9 +99,7 @@ export default function ActivityPage() {
 
             {loading ? (
                 <div className="space-y-4">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="h-28 bg-slate-100 animate-pulse rounded-xl" />
-                    ))}
+                    {[1, 2, 3].map(i => <CardSkeleton key={i} lines={2} />)}
                 </div>
             ) : error ? (
                 <div className="flex flex-col items-center justify-center p-12 text-center">

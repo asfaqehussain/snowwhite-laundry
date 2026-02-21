@@ -15,6 +15,7 @@ import {
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import ActivityChart from '@/components/ui/activity-chart';
+import { StatCardSkeleton, CardSkeleton } from '@/components/ui/page-loader';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({
@@ -107,30 +108,36 @@ export default function AdminDashboard() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {statCards.map((stat) => (
-                    <Link href={stat.href} key={stat.name} className="block group">
-                        <Card className="hover:shadow-md transition-all duration-300 border-slate-100 group-hover:border-brand-200">
-                            <div className="flex items-start justify-between mb-4">
-                                <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
-                                    <stat.icon className="h-6 w-6" />
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[1, 2, 3, 4].map(i => <StatCardSkeleton key={i} />)}
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {statCards.map((stat) => (
+                        <Link href={stat.href} key={stat.name} className="block group">
+                            <Card className="hover:shadow-md transition-all duration-300 border-slate-100 group-hover:border-brand-200">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                                        <stat.icon className="h-6 w-6" />
+                                    </div>
+                                    {stat.name === 'Total Hotels' && <span className="flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full"><TrendingUp className="w-3 h-3 mr-1" /> +12%</span>}
                                 </div>
-                                {stat.name === 'Total Hotels' && <span className="flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full"><TrendingUp className="w-3 h-3 mr-1" /> +12%</span>}
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">{stat.name}</p>
-                                <h3 className="text-3xl font-bold text-slate-900 mt-1 font-heading">
-                                    {loading ? '-' : stat.value}
-                                </h3>
-                                <p className="text-xs text-slate-400 mt-2 flex items-center">
-                                    <ArrowUpRight className="w-3 h-3 mr-1" />
-                                    {stat.trend}
-                                </p>
-                            </div>
-                        </Card>
-                    </Link>
-                ))}
-            </div>
+                                <div>
+                                    <p className="text-sm font-medium text-slate-500">{stat.name}</p>
+                                    <h3 className="text-3xl font-bold text-slate-900 mt-1 font-heading">
+                                        {loading ? '-' : stat.value}
+                                    </h3>
+                                    <p className="text-xs text-slate-400 mt-2 flex items-center">
+                                        <ArrowUpRight className="w-3 h-3 mr-1" />
+                                        {stat.trend}
+                                    </p>
+                                </div>
+                            </Card>
+                        </Link>
+                    ))}
+                </div>
+            )}
 
             {/* Activity Chart + Quick Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

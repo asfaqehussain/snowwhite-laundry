@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/modal';
 import { Card } from '@/components/ui/card';
 import { Plus, Trash2, MapPin, Search, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { CardSkeleton } from '@/components/ui/page-loader';
 
 export default function HotelsPage() {
     const [hotels, setHotels] = useState<Hotel[]>([]);
@@ -121,7 +122,18 @@ export default function HotelsPage() {
 
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3].map(i => <div key={i} className="h-40 bg-slate-100 animate-pulse rounded-2xl" />)}
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
+                            <div className="flex items-start justify-between">
+                                <div className="skeleton h-10 w-10 rounded-full" />
+                                <div className="skeleton h-8 w-8 rounded-full" />
+                            </div>
+                            <div className="space-y-2">
+                                <div className="skeleton h-5 w-2/3 rounded-lg" />
+                                <div className="skeleton h-4 w-4/5 rounded-lg" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

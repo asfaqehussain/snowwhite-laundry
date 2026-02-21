@@ -18,6 +18,7 @@ import {
     CheckCircle2, AlertTriangle, Package, Truck,
     Building2, Clock, ChevronDown, ChevronUp, User
 } from 'lucide-react';
+import { ApprovalRowSkeleton } from '@/components/ui/page-loader';
 
 interface ApprovalItem extends LoadItem {
     approvedQty: number;  // what the manager confirms received
@@ -218,7 +219,7 @@ export default function HotelApprovePage() {
 
             {loading ? (
                 <div className="space-y-4">
-                    {[1, 2].map(i => <div key={i} className="h-48 skeleton rounded-2xl" />)}
+                    {[1, 2, 3].map(i => <ApprovalRowSkeleton key={i} />)}
                 </div>
             ) : pendingLoads.length === 0 ? (
                 <Card className="flex flex-col items-center justify-center py-16 text-center border-dashed border-gray-200">
@@ -326,8 +327,8 @@ export default function HotelApprovePage() {
                                                                 value={item.approvedQty}
                                                                 onChange={e => updateApprovedQty(load.id, idx, parseInt(e.target.value) || 0)}
                                                                 className={`w-12 text-center text-sm font-bold rounded-lg border py-1 outline-none focus:ring-2 transition-all ${isShort
-                                                                        ? 'border-red-300 text-red-600 bg-red-50 focus:ring-red-200'
-                                                                        : 'border-emerald-200 text-emerald-700 bg-emerald-50 focus:ring-emerald-200'
+                                                                    ? 'border-red-300 text-red-600 bg-red-50 focus:ring-red-200'
+                                                                    : 'border-emerald-200 text-emerald-700 bg-emerald-50 focus:ring-emerald-200'
                                                                     }`}
                                                             />
                                                             <button
