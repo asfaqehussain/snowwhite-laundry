@@ -56,12 +56,17 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-            {/* Background Decorations */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-brand-200/20 rounded-full blur-3xl" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[40rem] h-[40rem] bg-indigo-200/20 rounded-full blur-3xl" />
-            </div>
+        <div
+            className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
+            style={{
+                backgroundImage: "url('/login_bg.png')",
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+            }}
+        >
+            {/* Dark overlay for readability */}
+            <div className="absolute inset-0 bg-white/15 backdrop-blur-[1px] z-0 pointer-events-none" />
 
             <div className="max-w-[400px] w-full space-y-8 bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/20 relative z-10 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
                 <div className="text-center">
