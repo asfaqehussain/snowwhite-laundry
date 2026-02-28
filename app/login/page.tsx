@@ -66,7 +66,7 @@ export default function LoginPage() {
             }}
         >
             {/* Dark overlay for readability */}
-            <div className="absolute inset-0 bg-white/15 backdrop-blur-[1px] z-0 pointer-events-none" />
+            <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px] z-0 pointer-events-none" />
 
             <div className="max-w-[400px] w-full space-y-8 bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/20 relative z-10 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
                 <div className="text-center">
