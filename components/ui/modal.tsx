@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline'; // Can switch to Lucide later if needed, but Heroicons is fine for now or switch to Lucide X
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface ModalProps {
     isOpen: boolean;

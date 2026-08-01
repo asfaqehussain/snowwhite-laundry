@@ -12,53 +12,88 @@ import {
     LogOut,
     Menu,
     X,
-    ArrowLeft,
+    Home,
     CalendarPlus,
+    LayoutDashboard,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CollectionRegisterLayout({ children }: { children: React.ReactNode }) {
     const { profile, signOut } = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isAuthorized, setIsAuthorized] = useState(false);
+    const [checkingAuth, setCheckingAuth] = useState(true);
+
+    useEffect(() => {
+        const passAuth = sessionStorage.getItem('cr_passcode_auth');
+        if (passAuth === 'true' || profile) {
+            setIsAuthorized(true);
+        } else {
+            router.push('/login');
+        }
+        setCheckingAuth(false);
+    }, [profile, router]);
+
+    const handleLock = () => {
+        sessionStorage.removeItem('cr_passcode_auth');
+        if (profile) signOut();
+        router.push('/login');
+    };
 
     const navigation = [
+        { name: 'Dashboard', href: '/collection-register', icon: LayoutDashboard },
         { name: 'Daily Collection', href: '/collection-register/daily', icon: CalendarPlus },
         { name: 'Monthly Report', href: '/collection-register/report', icon: BarChart3 },
         { name: 'Payments', href: '/collection-register/payments', icon: Wallet },
         { name: 'Settings', href: '/collection-register/settings', icon: Settings },
     ];
 
+    if (checkingAuth || !isAuthorized) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-sans">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="animate-spin w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full" />
+                    <p className="text-xs font-semibold">Verifying access...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-slate-50 flex font-sans">
+        <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans">
             {/* Sidebar for Desktop */}
             <aside className="hidden md:flex w-64 flex-col bg-white border-r border-gray-100 flex-shrink-0 fixed h-full z-20">
                 {/* Header */}
                 <div className="p-6 border-b border-gray-50">
-                    <div className="flex items-center gap-3">
-                        <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
-                            style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}
-                        >
-                            <ClipboardList className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="font-bold text-sm text-slate-900 tracking-tight font-heading">
-                                Collection Register
-                            </h2>
-                            <p className="text-[11px] text-slate-400 mt-0.5">Snow White Washing</p>
-                        </div>
+                    <div className="flex items-center justify-between">
+                        <Link href="/collection-register" className="flex items-center gap-3 group">
+                            <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform"
+                                style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}
+                            >
+                                <ClipboardList className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="font-bold text-sm text-slate-900 tracking-tight font-heading">
+                                    Collection Register
+                                </h2>
+                                <p className="text-[11px] text-slate-400 mt-0.5">Snow White Washing</p>
+                            </div>
+                        </Link>
                     </div>
                 </div>
 
-                {/* Back to Admin */}
+                {/* Home Link (Replaces Back to Admin) */}
                 <div className="px-4 pt-4">
                     <Link
-                        href="/admin"
-                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-all duration-200"
+                        href="/"
+                        className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-all duration-200"
                     >
-                        <ArrowLeft className="w-3.5 h-3.5" />
-                        Back to Admin
+                        <Home className="w-4 h-4 text-brand-500" />
+                        Main Home Page
                     </Link>
                 </div>
 
@@ -92,27 +127,30 @@ export default function CollectionRegisterLayout({ children }: { children: React
 
                 {/* User Footer */}
                 <div className="p-4 border-t border-gray-50">
-                    <div className="flex items-center mb-4 px-4">
-                        <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-xs ring-2 ring-white shadow-sm">
-                            {profile?.name?.charAt(0) || 'A'}
-                        </div>
-                        <div className="ml-3 flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate">{profile?.name}</p>
-                            <p className="text-xs text-slate-500 capitalize">{profile?.role}</p>
+                    <div className="flex items-center justify-between mb-4 px-2">
+                        <div className="flex items-center min-w-0">
+                            <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-xs ring-2 ring-white shadow-sm flex-shrink-0">
+                                {profile?.name?.charAt(0) || 'S'}
+                            </div>
+                            <div className="ml-3 min-w-0">
+                                <p className="text-xs font-semibold text-slate-900 truncate">{profile?.name || 'Staff User'}</p>
+                                <p className="text-[10px] text-slate-400 capitalize truncate">{profile?.role || 'Guest'}</p>
+                            </div>
                         </div>
                     </div>
+
                     <button
-                        onClick={signOut}
-                        className="w-full flex items-center px-4 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                        onClick={handleLock}
+                        className="w-full flex items-center px-4 py-2 text-xs font-semibold text-red-600 rounded-xl hover:bg-red-50 transition-colors"
                     >
-                        <LogOut className="mr-3 h-5 w-5" />
-                        Sign Out
+                        <LogOut className="mr-3 h-4 w-4" />
+                        Lock / Exit Register
                     </button>
                 </div>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 md:ml-64 relative">
+            <main className="flex-1 md:ml-64 relative min-h-screen">
                 {/* Mobile Header */}
                 <div className="md:hidden flex items-center justify-between p-4 bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-30">
                     <div className="flex items-center gap-2">
@@ -133,13 +171,13 @@ export default function CollectionRegisterLayout({ children }: { children: React
                 {mobileMenuOpen && (
                     <div className="md:hidden fixed inset-0 z-40 bg-white pt-20 px-4 space-y-2">
                         <Link
-                            href="/admin"
+                            href="/"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="block px-4 py-3 text-base font-medium rounded-lg text-slate-400"
+                            className="block px-4 py-3 text-base font-medium rounded-lg text-slate-600 hover:bg-slate-100"
                         >
                             <span className="flex items-center">
-                                <ArrowLeft className="mr-3 h-5 w-5" />
-                                Back to Admin
+                                <Home className="mr-3 h-5 w-5 text-brand-500" />
+                                Main Home Page
                             </span>
                         </Link>
                         <div className="border-t border-gray-100 my-2" />
@@ -150,7 +188,9 @@ export default function CollectionRegisterLayout({ children }: { children: React
                                 onClick={() => setMobileMenuOpen(false)}
                                 className={clsx(
                                     "block px-4 py-3 text-base font-medium rounded-lg",
-                                    pathname === item.href ? "bg-brand-50 text-brand-700" : "text-slate-600"
+                                    pathname === item.href
+                                        ? "bg-brand-50 text-brand-700"
+                                        : "text-slate-600 hover:bg-slate-50"
                                 )}
                             >
                                 <span className="flex items-center">
@@ -159,14 +199,6 @@ export default function CollectionRegisterLayout({ children }: { children: React
                                 </span>
                             </Link>
                         ))}
-                        <div className="border-t border-gray-100 my-2" />
-                        <button
-                            onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                            className="w-full text-left flex items-center px-4 py-3 text-base font-medium text-red-600 rounded-lg hover:bg-red-50"
-                        >
-                            <LogOut className="mr-3 h-5 w-5" />
-                            Sign Out
-                        </button>
                     </div>
                 )}
 

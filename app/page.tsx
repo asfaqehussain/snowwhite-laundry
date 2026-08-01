@@ -273,6 +273,20 @@ export default function Home() {
               Get Started by Logging In
             </Link>
           </div>
+
+          {/* Bottom Right Corner - More Features Button (Access to Old System Login) */}
+          <div className="absolute bottom-4 right-4 z-20">
+            <Link
+              href="/login?mode=system"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 transition-all duration-200 hover:text-white"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.34 15.84c-.14.15-.3.29-.47.43m2.38-7.94a9.97 9.97 0 00-4.97-1.17M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              More Features
+            </Link>
+          </div>
+
           <svg viewBox="0 0 1024 1024" className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-x-1/2 [mask-image:radial-gradient(closest-side,white,transparent)]" aria-hidden="true">
             <circle cx="512" cy="512" r="512" fill="url(#gradient2)" fillOpacity="0.7" />
             <defs>

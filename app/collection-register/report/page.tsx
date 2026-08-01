@@ -20,6 +20,8 @@ import {
 } from '@/lib/collection-register/constants';
 import { BarChart3, FileSpreadsheet, FileText, Printer, Search } from 'lucide-react';
 
+import { exportToExcel, exportToPDF, printReport } from '@/lib/collection-register/export-utils';
+
 interface HotelOption {
     id: string;
     name: string;
@@ -86,7 +88,7 @@ export default function MonthlyReportPage() {
     return (
         <div className="animate-fade-in-up">
             {/* Page Header */}
-            <div className="mb-6">
+            <div className="mb-6 no-print">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight font-heading">
                     Monthly Report
                 </h1>
@@ -96,7 +98,7 @@ export default function MonthlyReportPage() {
             </div>
 
             {/* Filters */}
-            <Card className="mb-6">
+            <Card className="mb-6 no-print">
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
                     {/* Hotel */}
                     <div>
@@ -170,7 +172,7 @@ export default function MonthlyReportPage() {
 
             {/* Report Table */}
             {loading && (
-                <Card>
+                <Card className="no-print">
                     <div className="space-y-3">
                         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                             <div key={i} className="h-10 skeleton rounded-lg" />
@@ -193,30 +195,30 @@ export default function MonthlyReportPage() {
                                 </p>
                             </div>
 
-                            {/* Export Buttons (future-ready) */}
-                            <div className="flex gap-2">
+                            {/* Active Export Buttons */}
+                            <div className="flex gap-2 no-print">
                                 <button
-                                    disabled
-                                    title="Coming Soon"
-                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-400 bg-slate-50 rounded-lg border border-gray-100 cursor-not-allowed"
+                                    onClick={() => exportToExcel(reportData)}
+                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 shadow-sm transition-all duration-200 active:scale-95 cursor-pointer"
+                                    title="Export to Excel (.xlsx)"
                                 >
-                                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                                     Excel
                                 </button>
                                 <button
-                                    disabled
-                                    title="Coming Soon"
-                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-400 bg-slate-50 rounded-lg border border-gray-100 cursor-not-allowed"
+                                    onClick={() => exportToPDF(reportData)}
+                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 shadow-sm transition-all duration-200 active:scale-95 cursor-pointer"
+                                    title="Export to PDF (.pdf)"
                                 >
-                                    <FileText className="w-3.5 h-3.5" />
+                                    <FileText className="w-4 h-4 text-red-600" />
                                     PDF
                                 </button>
                                 <button
-                                    disabled
-                                    title="Coming Soon"
-                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-400 bg-slate-50 rounded-lg border border-gray-100 cursor-not-allowed"
+                                    onClick={printReport}
+                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200 shadow-sm transition-all duration-200 active:scale-95 cursor-pointer"
+                                    title="Print Report"
                                 >
-                                    <Printer className="w-3.5 h-3.5" />
+                                    <Printer className="w-4 h-4 text-slate-600" />
                                     Print
                                 </button>
                             </div>

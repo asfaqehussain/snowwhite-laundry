@@ -27,10 +27,21 @@ import type {
 
 export async function getHotels(): Promise<{ id: string; name: string }[]> {
     const snapshot = await getDocs(collection(db, 'hotels'));
-    return snapshot.docs.map((d) => ({
+    const hotels = snapshot.docs.map((d) => ({
         id: d.id,
         name: d.data().name as string,
     }));
+
+    if (hotels.length === 0) {
+        const ref = await addDoc(collection(db, 'hotels'), {
+            name: 'Amaratara, Maval',
+            is_active: true,
+            createdAt: serverTimestamp(),
+        });
+        return [{ id: ref.id, name: 'Amaratara, Maval' }];
+    }
+
+    return hotels;
 }
 
 export async function seedDefaultData(): Promise<{ categoriesAdded: number; itemsAdded: number }> {

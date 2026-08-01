@@ -14,7 +14,7 @@ import {
 } from '@/lib/collection-register/firestore-service';
 import type { CRCategory, CRItem, CRDailyCollection, CollectionStatus } from '@/lib/collection-register/types';
 import { toISODate, COLLECTION_STATUS } from '@/lib/collection-register/constants';
-import { CalendarPlus, ChevronDown, ChevronUp, Save, Check, AlertCircle } from 'lucide-react';
+import { CalendarPlus, ChevronDown, ChevronUp, Save, Check, AlertCircle, Plus, Minus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface HotelOption {
@@ -136,13 +136,25 @@ export default function DailyCollectionPage() {
         }
     }, [selectedHotel, selectedDate, loadFormData]);
 
-    // Update quantity
+    // Update quantity via direct text input
     function handleQuantityChange(itemId: string, value: string) {
+        if (value === '') {
+            setQuantities((prev) => ({ ...prev, [itemId]: 0 }));
+            return;
+        }
         const num = parseInt(value, 10);
-        setQuantities((prev) => ({
-            ...prev,
-            [itemId]: isNaN(num) || num < 0 ? 0 : num,
-        }));
+        if (!isNaN(num) && num >= 0) {
+            setQuantities((prev) => ({ ...prev, [itemId]: num }));
+        }
+    }
+
+    // Adjust quantity via + / - stepper buttons
+    function adjustQuantity(itemId: string, delta: number) {
+        setQuantities((prev) => {
+            const current = prev[itemId] ?? 0;
+            const next = Math.max(0, current + delta);
+            return { ...prev, [itemId]: next };
+        });
     }
 
     // Toggle category expand/collapse
@@ -160,7 +172,14 @@ export default function DailyCollectionPage() {
 
     // Save collection
     async function handleSave() {
-        if (!selectedHotel || !selectedDate || !profile) return;
+        if (!selectedHotel) {
+            toast.error('Please select a hotel first');
+            return;
+        }
+        if (!selectedDate) {
+            toast.error('Please select a date first');
+            return;
+        }
 
         setSaving(true);
         try {
@@ -171,7 +190,7 @@ export default function DailyCollectionPage() {
                     collection_date: selectedDate,
                     status,
                     items: quantities,
-                    created_by: profile.uid,
+                    created_by: profile?.uid || 'staff',
                 },
                 existingCollection?.id
             );
@@ -183,9 +202,9 @@ export default function DailyCollectionPage() {
 
             // Reload to reflect saved state
             await loadFormData();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save collection:', error);
-            toast.error('Failed to save collection');
+            toast.error(error.message || 'Failed to save collection');
         } finally {
             setSaving(false);
         }
@@ -338,18 +357,42 @@ export default function DailyCollectionPage() {
                                                 {items.map((item) => (
                                                     <div
                                                         key={item.id}
-                                                        className="flex items-center justify-between py-3 gap-4"
+                                                        className="flex items-center justify-between py-3 gap-3"
                                                     >
                                                         <label className="text-sm text-slate-700 font-medium flex-1">
                                                             {item.name}
                                                         </label>
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            value={quantities[item.id] ?? 0}
-                                                            onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                                                            className="w-24 text-center rounded-xl border-gray-200 bg-gray-50/50 text-gray-900 focus:bg-white transition-all duration-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-sm px-3 py-2.5 font-medium"
-                                                        />
+
+                                                        {/* Stepper Input UI */}
+                                                        <div className="flex items-center gap-1.5">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => adjustQuantity(item.id, -1)}
+                                                                className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95 flex items-center justify-center font-bold transition-all disabled:opacity-40"
+                                                                disabled={(quantities[item.id] ?? 0) <= 0}
+                                                                title="Decrease quantity"
+                                                            >
+                                                                <Minus className="w-4 h-4" />
+                                                            </button>
+
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                value={quantities[item.id] === 0 ? '0' : (quantities[item.id] ?? 0)}
+                                                                onFocus={(e) => e.target.select()}
+                                                                onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                                                                className="w-16 text-center rounded-xl border border-gray-200 bg-gray-50/50 text-slate-900 focus:bg-white transition-all duration-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 text-sm py-2 font-semibold tabular-nums"
+                                                            />
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => adjustQuantity(item.id, 1)}
+                                                                className="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 hover:bg-brand-100 active:scale-95 flex items-center justify-center font-bold transition-all"
+                                                                title="Increase quantity"
+                                                            >
+                                                                <Plus className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
