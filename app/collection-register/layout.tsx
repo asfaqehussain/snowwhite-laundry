@@ -1,51 +1,69 @@
 'use client';
 
-import { useRoleProtection } from "@/lib/hooks/useRoleProtection";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { useAuth } from "@/lib/auth-context";
 import {
-    LayoutDashboard,
-    Building2,
-    Users,
-    Package,
+    ClipboardList,
+    BarChart3,
+    Wallet,
+    Settings,
     LogOut,
     Menu,
     X,
-    ClipboardList,
+    ArrowLeft,
+    CalendarPlus,
 } from "lucide-react";
-import NotificationBell from "@/components/ui/notification-bell";
 import { useState } from "react";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const { isAuthorized, loading } = useRoleProtection(['admin']);
+export default function CollectionRegisterLayout({ children }: { children: React.ReactNode }) {
     const { profile, signOut } = useAuth();
     const pathname = usePathname();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const navigation = [
-        { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-        { name: 'Hotels', href: '/admin/hotels', icon: Building2 },
-        { name: 'Users / Drivers', href: '/admin/users', icon: Users },
-        { name: 'Loads', href: '/admin/loads', icon: Package },
-        { name: 'Collection Register', href: '/collection-register', icon: ClipboardList },
+        { name: 'Daily Collection', href: '/collection-register/daily', icon: CalendarPlus },
+        { name: 'Monthly Report', href: '/collection-register/report', icon: BarChart3 },
+        { name: 'Payments', href: '/collection-register/payments', icon: Wallet },
+        { name: 'Settings', href: '/collection-register/settings', icon: Settings },
     ];
-
-    if (loading || !isAuthorized) return null;
 
     return (
         <div className="min-h-screen bg-slate-50 flex font-sans">
             {/* Sidebar for Desktop */}
             <aside className="hidden md:flex w-64 flex-col bg-white border-r border-gray-100 flex-shrink-0 fixed h-full z-20">
-                <div className="p-6 border-b border-gray-50 flex items-center justify-center">
-                    <div className="h-10 w-10 relative">
-                        <img src="/logo.png" alt="Logo" className="object-contain" />
+                {/* Header */}
+                <div className="p-6 border-b border-gray-50">
+                    <div className="flex items-center gap-3">
+                        <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
+                            style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}
+                        >
+                            <ClipboardList className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="font-bold text-sm text-slate-900 tracking-tight font-heading">
+                                Collection Register
+                            </h2>
+                            <p className="text-[11px] text-slate-400 mt-0.5">Snow White Washing</p>
+                        </div>
                     </div>
-                    <span className="ml-3 font-bold text-lg text-slate-900 tracking-tight font-heading">Snow White</span>
                 </div>
 
-                <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+                {/* Back to Admin */}
+                <div className="px-4 pt-4">
+                    <Link
+                        href="/admin"
+                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-all duration-200"
+                    >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        Back to Admin
+                    </Link>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
                     {navigation.map((item) => {
                         const isActive = pathname === item.href;
                         const Icon = item.icon;
@@ -72,6 +90,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     })}
                 </nav>
 
+                {/* User Footer */}
                 <div className="p-4 border-t border-gray-50">
                     <div className="flex items-center mb-4 px-4">
                         <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-xs ring-2 ring-white shadow-sm">
@@ -81,7 +100,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <p className="text-sm font-medium text-slate-900 truncate">{profile?.name}</p>
                             <p className="text-xs text-slate-500 capitalize">{profile?.role}</p>
                         </div>
-                        <NotificationBell />
                     </div>
                     <button
                         onClick={signOut}
@@ -97,23 +115,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <main className="flex-1 md:ml-64 relative">
                 {/* Mobile Header */}
                 <div className="md:hidden flex items-center justify-between p-4 bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-30">
-                    <div className="flex items-center">
-                        <div className="h-8 w-8 relative">
-                            <img src="/logo.png" alt="Logo" className="object-contain" />
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{ background: 'linear-gradient(135deg, #0ea5e9, #0369a1)' }}
+                        >
+                            <ClipboardList className="w-4 h-4 text-white" />
                         </div>
-                        <span className="ml-2 font-bold text-slate-900">Snow White</span>
+                        <span className="font-bold text-slate-900 text-sm">Collection Register</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <NotificationBell />
-                        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-gray-500">
-                            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                        </button>
-                    </div>
+                    <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-gray-500">
+                        {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                    </button>
                 </div>
 
                 {/* Mobile Menu */}
                 {mobileMenuOpen && (
                     <div className="md:hidden fixed inset-0 z-40 bg-white pt-20 px-4 space-y-2">
+                        <Link
+                            href="/admin"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="block px-4 py-3 text-base font-medium rounded-lg text-slate-400"
+                        >
+                            <span className="flex items-center">
+                                <ArrowLeft className="mr-3 h-5 w-5" />
+                                Back to Admin
+                            </span>
+                        </Link>
+                        <div className="border-t border-gray-100 my-2" />
                         {navigation.map((item) => (
                             <Link
                                 key={item.name}
@@ -130,6 +159,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 </span>
                             </Link>
                         ))}
+                        <div className="border-t border-gray-100 my-2" />
                         <button
                             onClick={() => { signOut(); setMobileMenuOpen(false); }}
                             className="w-full text-left flex items-center px-4 py-3 text-base font-medium text-red-600 rounded-lg hover:bg-red-50"
