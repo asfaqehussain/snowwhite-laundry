@@ -10,6 +10,7 @@ import {
     getItems,
     getCollection,
     saveCollection,
+    seedDefaultData,
 } from '@/lib/collection-register/firestore-service';
 import type { CRCategory, CRItem, CRDailyCollection, CollectionStatus } from '@/lib/collection-register/types';
 import { toISODate, COLLECTION_STATUS } from '@/lib/collection-register/constants';
@@ -56,6 +57,9 @@ export default function DailyCollectionPage() {
         try {
             const h = await getHotels();
             setHotels(h);
+            if (h.length > 0) {
+                setSelectedHotel(h[0]);
+            }
         } catch (error) {
             console.error('Failed to load hotels:', error);
             toast.error('Failed to load hotels');
@@ -72,6 +76,9 @@ export default function DailyCollectionPage() {
         setFormReady(false);
 
         try {
+            // Auto seed if empty
+            await seedDefaultData();
+
             // Fetch categories and items
             const [categories, items] = await Promise.all([
                 getCategories(),

@@ -33,15 +33,84 @@ export async function getHotels(): Promise<{ id: string; name: string }[]> {
     }));
 }
 
+export async function seedDefaultData(): Promise<{ categoriesAdded: number; itemsAdded: number }> {
+    const existingCats = await getCategories();
+    if (existingCats.length > 0) {
+        return { categoriesAdded: 0, itemsAdded: 0 };
+    }
+
+    const defaultData = [
+        {
+            category: 'Bed Linen',
+            order: 1,
+            items: [
+                { name: 'D. Double Bed Sheet', rate: 18, order: 1 },
+                { name: 'S. Bed Sheet', rate: 13, order: 2 },
+                { name: 'D. Dovet Cover', rate: 25, order: 3 },
+                { name: 'S. Dovet Cover', rate: 18, order: 4 },
+                { name: 'D- Mat- Proctor', rate: 35, order: 5 },
+                { name: 'S. Mat Proctor', rate: 0, order: 6 },
+                { name: 'Pillow Cover', rate: 7, order: 7 },
+                { name: 'Sheer Curratin', rate: 0, order: 8 },
+                { name: 'Runner', rate: 15, order: 9 },
+                { name: 'Cussain Cover', rate: 7, order: 10 },
+            ],
+        },
+        {
+            category: 'Bath Linen',
+            order: 2,
+            items: [
+                { name: 'Bath Towel', rate: 14, order: 1 },
+                { name: 'Hand Towel', rate: 6, order: 2 },
+                { name: 'Bath Mat', rate: 7, order: 3 },
+                { name: 'Ice Towel', rate: 6, order: 4 },
+                { name: 'Bath Robe', rate: 20, order: 5 },
+                { name: 'Pool Towel', rate: 15, order: 6 },
+            ],
+        },
+        {
+            category: 'F&B Linen',
+            order: 3,
+            items: [
+                { name: 'Table Cover', rate: 16, order: 1 },
+                { name: 'Table Top', rate: 15, order: 2 },
+                { name: 'Chair Cover', rate: 12, order: 3 },
+                { name: 'Chair Cover Belt', rate: 0, order: 4 },
+            ],
+        },
+    ];
+
+    let categoriesAdded = 0;
+    let itemsAdded = 0;
+
+    for (const group of defaultData) {
+        const catId = await upsertCategory({
+            name: group.category,
+            display_order: group.order,
+        });
+        categoriesAdded++;
+
+        for (const item of group.items) {
+            await upsertItem({
+                category_id: catId,
+                name: item.name,
+                rate: item.rate,
+                display_order: item.order,
+                is_active: true,
+            });
+            itemsAdded++;
+        }
+    }
+
+    return { categoriesAdded, itemsAdded };
+}
+
 // ─── Categories ─────────────────────────────────────────────────────────────
 
 export async function getCategories(): Promise<CRCategory[]> {
-    const q = query(
-        collection(db, CR_COLLECTIONS.CATEGORIES),
-        orderBy('display_order', 'asc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CRCategory));
+    const snapshot = await getDocs(collection(db, CR_COLLECTIONS.CATEGORIES));
+    const cats = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CRCategory));
+    return cats.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 }
 
 export async function upsertCategory(
@@ -71,32 +140,20 @@ export async function deleteCategory(id: string): Promise<void> {
 // ─── Items ──────────────────────────────────────────────────────────────────
 
 export async function getItems(activeOnly = true): Promise<CRItem[]> {
-    let q;
+    const snapshot = await getDocs(collection(db, CR_COLLECTIONS.ITEMS));
+    let items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CRItem));
     if (activeOnly) {
-        q = query(
-            collection(db, CR_COLLECTIONS.ITEMS),
-            where('is_active', '==', true),
-            orderBy('display_order', 'asc')
-        );
-    } else {
-        q = query(
-            collection(db, CR_COLLECTIONS.ITEMS),
-            orderBy('display_order', 'asc')
-        );
+        items = items.filter((item) => item.is_active !== false);
     }
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CRItem));
+    return items.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 }
 
 export async function getItemsByCategory(categoryId: string): Promise<CRItem[]> {
-    const q = query(
-        collection(db, CR_COLLECTIONS.ITEMS),
-        where('category_id', '==', categoryId),
-        where('is_active', '==', true),
-        orderBy('display_order', 'asc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CRItem));
+    const snapshot = await getDocs(collection(db, CR_COLLECTIONS.ITEMS));
+    return snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() } as CRItem))
+        .filter((item) => item.category_id === categoryId && item.is_active !== false)
+        .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 }
 
 export async function upsertItem(
@@ -187,30 +244,32 @@ export async function getMonthlyCollections(
     month: number,
     year: number
 ): Promise<CRDailyCollection[]> {
-    // Build date range: "2026-06-01" to "2026-06-30"
+    // Fetch all collections for this hotel, then filter by date range client-side
+    const q = query(
+        collection(db, CR_COLLECTIONS.DAILY_COLLECTIONS),
+        where('hotel_id', '==', hotelId)
+    );
+    const snapshot = await getDocs(q);
+    const all = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CRDailyCollection));
+
+    // Filter by date range
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const daysInMonth = new Date(year, month, 0).getDate();
     const endDate = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
 
-    const q = query(
-        collection(db, CR_COLLECTIONS.DAILY_COLLECTIONS),
-        where('hotel_id', '==', hotelId),
-        where('collection_date', '>=', startDate),
-        where('collection_date', '<=', endDate),
-        orderBy('collection_date', 'asc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CRDailyCollection));
+    return all
+        .filter((c) => c.collection_date >= startDate && c.collection_date <= endDate)
+        .sort((a, b) => a.collection_date.localeCompare(b.collection_date));
 }
 
 // Get recent collections across all hotels (for dashboard)
 export async function getRecentCollections(limit = 10): Promise<CRDailyCollection[]> {
-    const q = query(
-        collection(db, CR_COLLECTIONS.DAILY_COLLECTIONS),
-        orderBy('created_at', 'desc')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.slice(0, limit).map((d) => ({ id: d.id, ...d.data() } as CRDailyCollection));
+    const snapshot = await getDocs(collection(db, CR_COLLECTIONS.DAILY_COLLECTIONS));
+    const all = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CRDailyCollection));
+    // Sort by collection_date descending
+    return all
+        .sort((a, b) => b.collection_date.localeCompare(a.collection_date))
+        .slice(0, limit);
 }
 
 // ─── Payments ───────────────────────────────────────────────────────────────
@@ -224,11 +283,11 @@ export async function getPayments(
         collection(db, CR_COLLECTIONS.PAYMENTS),
         where('hotel_id', '==', hotelId),
         where('billing_month', '==', month),
-        where('billing_year', '==', year),
-        orderBy('payment_date', 'asc')
+        where('billing_year', '==', year)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CRPayment));
+    const payments = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as CRPayment));
+    return payments.sort((a, b) => (a.payment_date || '').localeCompare(b.payment_date || ''));
 }
 
 export async function addPayment(data: {
