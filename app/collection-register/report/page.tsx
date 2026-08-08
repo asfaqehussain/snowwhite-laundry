@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import {
     getHotels,
     getCategories,
-    getItems,
     getMonthlyCollections,
     seedDefaultData,
 } from '@/lib/collection-register/firestore-service';
+import { getItemsForHotel } from '@/lib/collection-register/hotel-service';
 import { buildMonthlyReport } from '@/lib/collection-register/report-utils';
 import type { MonthlyReportData } from '@/lib/collection-register/types';
 import {
@@ -64,7 +64,7 @@ export default function MonthlyReportPage() {
             await seedDefaultData();
             const [collections, items, categories] = await Promise.all([
                 getMonthlyCollections(selectedHotel.id, selectedMonth, selectedYear),
-                getItems(true),
+                getItemsForHotel(selectedHotel.id, true),
                 getCategories(),
             ]);
 

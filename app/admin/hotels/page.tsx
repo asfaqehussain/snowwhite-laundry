@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Card } from '@/components/ui/card';
-import { Plus, Trash2, MapPin, Search, Building2 } from 'lucide-react';
+import { Plus, Trash2, MapPin, Search, Building2, Settings2 } from 'lucide-react';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { CardSkeleton } from '@/components/ui/page-loader';
 
@@ -156,6 +157,16 @@ export default function HotelsPage() {
                             <div className="flex items-center text-sm text-slate-500">
                                 <MapPin className="h-4 w-4 mr-1 text-slate-400" />
                                 <span className="truncate">{hotel.address}</span>
+                            </div>
+
+                            <div className="mt-4">
+                                <Link
+                                    href={`/admin/hotels/${hotel.id}`}
+                                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-xl transition-colors"
+                                >
+                                    <Settings2 className="h-4 w-4" />
+                                    Manage Items & Rates
+                                </Link>
                             </div>
                         </Card>
                     ))}

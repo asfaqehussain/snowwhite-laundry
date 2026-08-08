@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth-context';
 import {
     getHotels,
-    getItems,
     getMonthlyCollections,
     getPayments,
     addPayment,
     deletePayment,
 } from '@/lib/collection-register/firestore-service';
+import { getItemsForHotel } from '@/lib/collection-register/hotel-service';
 import { calculateMonthlyBill } from '@/lib/collection-register/report-utils';
 import {
     MONTHS,
@@ -84,9 +84,10 @@ export default function PaymentsPage() {
         setDataLoaded(false);
 
         try {
+            // Fetch items with the hotel's own rates
             const [collections, items, paymentsList] = await Promise.all([
                 getMonthlyCollections(selectedHotel.id, selectedMonth, selectedYear),
-                getItems(true),
+                getItemsForHotel(selectedHotel.id, true),
                 getPayments(selectedHotel.id, selectedMonth, selectedYear),
             ]);
 

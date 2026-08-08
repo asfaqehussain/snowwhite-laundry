@@ -74,7 +74,7 @@ function LoginContent() {
         if (passcode === STATIC_PASSCODE) {
             sessionStorage.setItem('cr_passcode_auth', 'true');
             toast.success('Access Granted! Welcome to Collection Register', { icon: '🔑' });
-            router.push('/collection-register');
+            router.replace('/collection-register');
         } else {
             setErrorShake(true);
             toast.error('Incorrect Passcode. Try again.');
@@ -108,10 +108,10 @@ function LoginContent() {
                 toast.success(`Welcome back, ${userData.name}!`);
 
                 const role = userData.role;
-                if (role === 'admin') router.push('/admin');
-                else if (role === 'driver') router.push('/driver');
-                else if (role === 'hotel_manager') router.push('/hotel');
-                else router.push('/unauthorized');
+                if (role === 'admin') router.replace('/admin');
+                else if (role === 'driver') router.replace('/driver');
+                else if (role === 'hotel_manager') router.replace('/hotel');
+                else router.replace('/unauthorized');
             } else {
                 toast.error('Invalid email or password');
             }

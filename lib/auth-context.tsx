@@ -70,9 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signOut = async () => {
         localStorage.removeItem('snow_white_uid');
+        sessionStorage.removeItem('cr_passcode_auth');
         setProfile(null);
         setUser(null);
-        router.push('/login');
+        router.replace('/login');
     };
 
     return (

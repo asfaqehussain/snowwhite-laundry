@@ -7,11 +7,11 @@ import { useAuth } from '@/lib/auth-context';
 import {
     getHotels,
     getCategories,
-    getItems,
     getCollection,
     saveCollection,
     seedDefaultData,
 } from '@/lib/collection-register/firestore-service';
+import { getItemsForHotel } from '@/lib/collection-register/hotel-service';
 import type { CRCategory, CRItem, CRDailyCollection, CollectionStatus } from '@/lib/collection-register/types';
 import { toISODate, COLLECTION_STATUS } from '@/lib/collection-register/constants';
 import { CalendarPlus, ChevronDown, ChevronUp, Save, Check, AlertCircle, Plus, Minus } from 'lucide-react';
@@ -79,10 +79,10 @@ export default function DailyCollectionPage() {
             // Auto seed if empty
             await seedDefaultData();
 
-            // Fetch categories and items
+            // Fetch categories and items (per-hotel rates)
             const [categories, items] = await Promise.all([
                 getCategories(),
-                getItems(true),
+                getItemsForHotel(selectedHotel.id, true),
             ]);
 
             // Group items by category

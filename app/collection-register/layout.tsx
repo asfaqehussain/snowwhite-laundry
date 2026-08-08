@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { useAuth } from "@/lib/auth-context";
 import {
     ClipboardList,
     BarChart3,
@@ -17,6 +16,7 @@ import {
     LayoutDashboard,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 
 export default function CollectionRegisterLayout({ children }: { children: React.ReactNode }) {
@@ -32,7 +32,7 @@ export default function CollectionRegisterLayout({ children }: { children: React
         if (passAuth === 'true' || profile) {
             setIsAuthorized(true);
         } else {
-            router.push('/login');
+            router.replace('/login');
         }
         setCheckingAuth(false);
     }, [profile, router]);
@@ -40,7 +40,7 @@ export default function CollectionRegisterLayout({ children }: { children: React
     const handleLock = () => {
         sessionStorage.removeItem('cr_passcode_auth');
         if (profile) signOut();
-        router.push('/login');
+        router.replace('/login');
     };
 
     const navigation = [
